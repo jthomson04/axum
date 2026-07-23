@@ -205,28 +205,34 @@ impl Event {
     where
         T: serde::Serialize,
     {
-        struct IgnoreNewLines<'a>(bytes::buf::Writer<&'a mut BytesMut>);
-        impl std::io::Write for IgnoreNewLines<'_> {
-            fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        struct SseJsonFormatter;
+        impl serde_json::ser::Formatter for SseJsonFormatter {
+            fn write_raw_fragment<W>(
+                &mut self,
+                writer: &mut W,
+                fragment: &str,
+            ) -> std::io::Result<()>
+            where
+                W: ?Sized + std::io::Write,
+            {
+                let buf = fragment.as_bytes();
                 let mut last_split = 0;
                 for delimiter in memchr::memchr2_iter(b'\n', b'\r', buf) {
-                    self.0.write_all(&buf[last_split..delimiter])?;
+                    writer.write_all(&buf[last_split..delimiter])?;
                     last_split = delimiter + 1;
                 }
-                self.0.write_all(&buf[last_split..])?;
-                Ok(buf.len())
-            }
-
-            fn flush(&mut self) -> std::io::Result<()> {
-                self.0.flush()
+                writer.write_all(&buf[last_split..])
             }
         }
+
         if self.flags.contains(EventFlags::HAS_DATA) {
             panic!("Called `EventBuilder::json_data` multiple times");
         }
 
         self.buffer.extend_from_slice(b"data: ");
-        serde_json::to_writer(IgnoreNewLines((&mut self.buffer).writer()), &data)
+        let writer = (&mut self.buffer).writer();
+        let mut serializer = serde_json::Serializer::with_formatter(writer, SseJsonFormatter);
+        data.serialize(&mut serializer)
             .map_err(axum_core::Error::new)?;
         self.buffer.put_u8(b'\n');
 
@@ -551,6 +557,18 @@ mod tests {
         assert_eq!(
             &*json_raw_value_event.finalize(),
             format!("data: {}\n\n", json_string.replace(['\n', '\r'], "")).as_bytes()
+        );
+    }
+
+    #[test]
+    fn json_string_newlines_are_escaped() {
+        let event = Event::default()
+            .json_data(serde_json::json!({ "text": "one\ntwo\rthree" }))
+            .unwrap();
+
+        assert_eq!(
+            &*event.finalize(),
+            b"data: {\"text\":\"one\\ntwo\\rthree\"}\n\n"
         );
     }
 
