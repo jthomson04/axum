@@ -257,11 +257,32 @@ impl Event {
     where
         T: serde_core::Serialize,
     {
+        struct SseJsonFormatter;
+        impl serde_json::ser::Formatter for SseJsonFormatter {
+            fn write_raw_fragment<W>(
+                &mut self,
+                writer: &mut W,
+                fragment: &str,
+            ) -> std::io::Result<()>
+            where
+                W: ?Sized + std::io::Write,
+            {
+                let buf = fragment.as_bytes();
+                let mut last_split = 0;
+                for delimiter in memchr::memchr2_iter(b'\n', b'\r', buf) {
+                    writer.write_all(&buf[last_split..=delimiter])?;
+                    writer.write_all(b"data: ")?;
+                    last_split = delimiter + 1;
+                }
+                writer.write_all(&buf[last_split..])
+            }
+        }
+
         struct JsonWriter<'a>(&'a mut EventDataWriter);
         impl std::io::Write for JsonWriter<'_> {
             #[inline]
             fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
-                Ok(self.0.write_buf(buf))
+                Ok(self.0.write_json_buf(buf))
             }
             fn flush(&mut self) -> std::io::Result<()> {
                 Ok(())
@@ -271,7 +292,9 @@ impl Event {
         let mut writer = self.into_data_writer();
 
         let json_writer = JsonWriter(&mut writer);
-        serde_json::to_writer(json_writer, &data).map_err(axum_core::Error::new)?;
+        let mut serializer = serde_json::Serializer::with_formatter(json_writer, SseJsonFormatter);
+        data.serialize(&mut serializer)
+            .map_err(axum_core::Error::new)?;
 
         Ok(writer.into_event())
     }
@@ -437,6 +460,17 @@ impl EventDataWriter {
 }
 
 impl EventDataWriter {
+    fn begin_data(&mut self) {
+        if !std::mem::replace(&mut self.data_written, true) {
+            if self.event.flags.contains(EventFlags::HAS_DATA) {
+                panic!("Called `Event::data*` multiple times");
+            }
+
+            let _ = self.event.buffer.as_mut().write_str("data: ");
+            self.event.flags.insert(EventFlags::HAS_DATA);
+        }
+    }
+
     // Assumption: underlying writer never returns an error:
     // <https://docs.rs/bytes/latest/src/bytes/buf/writer.rs.html#79-82>
     fn write_buf(&mut self, buf: &[u8]) -> usize {
@@ -444,17 +478,9 @@ impl EventDataWriter {
             return 0;
         }
 
+        self.begin_data();
+
         let buffer = self.event.buffer.as_mut();
-
-        if !std::mem::replace(&mut self.data_written, true) {
-            if self.event.flags.contains(EventFlags::HAS_DATA) {
-                panic!("Called `Event::data*` multiple times");
-            }
-
-            let _ = buffer.write_str("data: ");
-            self.event.flags.insert(EventFlags::HAS_DATA);
-        }
-
         let mut writer = buffer.writer();
 
         let mut last_split = 0;
@@ -465,6 +491,19 @@ impl EventDataWriter {
         }
         let _ = writer.write_all(&buf[last_split..]);
 
+        buf.len()
+    }
+
+    #[cfg(feature = "json")]
+    fn write_json_buf(&mut self, buf: &[u8]) -> usize {
+        if buf.is_empty() {
+            return 0;
+        }
+
+        // Compact serde_json output only contains literal newlines in raw
+        // fragments, which SseJsonFormatter handles before writing here.
+        self.begin_data();
+        self.event.buffer.as_mut().extend_from_slice(buf);
         buf.len()
     }
 }
@@ -688,6 +727,18 @@ mod tests {
         assert_eq!(
             &*json_raw_value_event.finalize(),
             b"data: {\rdata: \"foo\":  \ndata: \rdata: \rdata:    \"bar\\n\"\ndata: }\n\n"
+        );
+    }
+
+    #[test]
+    fn json_string_newlines_are_escaped() {
+        let event = Event::default()
+            .json_data(serde_json::json!({ "text": "one\ntwo\rthree" }))
+            .unwrap();
+
+        assert_eq!(
+            &*event.finalize(),
+            b"data: {\"text\":\"one\\ntwo\\rthree\"}\n\n"
         );
     }
 
