@@ -264,7 +264,7 @@ checksum = "1505bd5d3d116872e7271a6d4e16d81d0c8570876c8de68093a09ac269d8aac0"
 name = "auto-reload"
 version = "0.1.0"
 dependencies = [
- "axum",
+ "axum 0.8.4",
  "listenfd",
  "tokio",
 ]
@@ -305,9 +305,9 @@ name = "axum"
 version = "0.8.4"
 dependencies = [
  "anyhow",
- "axum-core",
- "axum-extra",
- "axum-macros",
+ "axum-core 0.5.6",
+ "axum-extra 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "axum-macros 0.5.1",
  "base64 0.22.1",
  "bytes",
  "form_urlencoded",
@@ -348,12 +348,39 @@ dependencies = [
 ]
 
 [[package]]
+name = "axum"
+version = "0.8.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "021e862c184ae977658b36c4500f7feac3221ca5da43e3f25bd04ab6c79a29b5"
+dependencies = [
+ "axum-core 0.5.6",
+ "bytes",
+ "futures-util",
+ "http 1.2.0",
+ "http-body 1.0.1",
+ "http-body-util",
+ "itoa",
+ "matchit",
+ "memchr",
+ "mime",
+ "percent-encoding",
+ "pin-project-lite",
+ "rustversion",
+ "serde",
+ "sync_wrapper 1.0.2",
+ "tower 0.5.2",
+ "tower-layer",
+ "tower-service",
+ "tracing",
+]
+
+[[package]]
 name = "axum-core"
 version = "0.5.2"
 dependencies = [
- "axum",
- "axum-extra",
- "axum-macros",
+ "axum 0.8.4",
+ "axum-extra 0.10.1",
+ "axum-macros 0.5.0",
  "bytes",
  "futures-core",
  "http 1.2.0",
@@ -372,12 +399,32 @@ dependencies = [
 ]
 
 [[package]]
+name = "axum-core"
+version = "0.5.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "08c78f31d7b1291f7ee735c1c6780ccde7785daae9a9206026862dab7d8792d1"
+dependencies = [
+ "bytes",
+ "futures-core",
+ "http 1.2.0",
+ "http-body 1.0.1",
+ "http-body-util",
+ "mime",
+ "pin-project-lite",
+ "sync_wrapper 1.0.2",
+ "tower-http 0.6.2",
+ "tower-layer",
+ "tower-service",
+ "tracing",
+]
+
+[[package]]
 name = "axum-extra"
 version = "0.10.1"
 dependencies = [
- "axum",
- "axum-core",
- "axum-macros",
+ "axum 0.8.4",
+ "axum-core 0.5.2",
+ "axum-macros 0.5.0",
  "bytes",
  "cookie",
  "fastrand",
@@ -412,11 +459,34 @@ dependencies = [
 ]
 
 [[package]]
+name = "axum-extra"
+version = "0.10.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "45bf463831f5131b7d3c756525b305d40f1185b688565648a92e1392ca35713d"
+dependencies = [
+ "axum 0.8.4 (registry+https://github.com/rust-lang/crates.io-index)",
+ "axum-core 0.5.6",
+ "bytes",
+ "futures-util",
+ "headers",
+ "http 1.2.0",
+ "http-body 1.0.1",
+ "http-body-util",
+ "mime",
+ "pin-project-lite",
+ "rustversion",
+ "serde",
+ "tower 0.5.2",
+ "tower-layer",
+ "tower-service",
+]
+
+[[package]]
 name = "axum-macros"
 version = "0.5.0"
 dependencies = [
- "axum",
- "axum-extra",
+ "axum 0.8.4",
+ "axum-extra 0.10.1",
  "proc-macro2",
  "quote",
  "rustversion",
@@ -425,6 +495,17 @@ dependencies = [
  "syn 2.0.93",
  "tokio",
  "trybuild",
+]
+
+[[package]]
+name = "axum-macros"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7aa268c23bfbbd2c4363b9cd302a4f504fb2a9dfe7e3451d66f35dd392e20aca"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.93",
 ]
 
 [[package]]
@@ -1330,7 +1411,7 @@ name = "example-anyhow-error-response"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "axum",
+ "axum 0.8.4",
  "http-body-util",
  "tokio",
  "tower 0.5.2",
@@ -1340,7 +1421,7 @@ dependencies = [
 name = "example-chat"
 version = "0.1.0"
 dependencies = [
- "axum",
+ "axum 0.8.4",
  "futures",
  "tokio",
  "tracing",
@@ -1352,7 +1433,7 @@ name = "example-compression"
 version = "0.1.0"
 dependencies = [
  "assert-json-diff",
- "axum",
+ "axum 0.8.4",
  "brotli 6.0.0",
  "flate2",
  "http 1.2.0",
@@ -1369,7 +1450,7 @@ dependencies = [
 name = "example-consume-body-in-extractor-or-middleware"
 version = "0.1.0"
 dependencies = [
- "axum",
+ "axum 0.8.4",
  "http-body-util",
  "tokio",
  "tracing",
@@ -1380,7 +1461,7 @@ dependencies = [
 name = "example-cors"
 version = "0.1.0"
 dependencies = [
- "axum",
+ "axum 0.8.4",
  "tokio",
  "tower-http 0.6.2",
 ]
@@ -1389,8 +1470,8 @@ dependencies = [
 name = "example-customize-extractor-error"
 version = "0.1.0"
 dependencies = [
- "axum",
- "axum-extra",
+ "axum 0.8.4",
+ "axum-extra 0.10.1",
  "serde",
  "serde_json",
  "thiserror 1.0.69",
@@ -1403,7 +1484,7 @@ dependencies = [
 name = "example-customize-path-rejection"
 version = "0.1.0"
 dependencies = [
- "axum",
+ "axum 0.8.4",
  "serde",
  "tokio",
  "tracing",
@@ -1414,7 +1495,7 @@ dependencies = [
 name = "example-dependency-injection"
 version = "0.1.0"
 dependencies = [
- "axum",
+ "axum 0.8.4",
  "serde",
  "tokio",
  "tracing",
@@ -1426,7 +1507,7 @@ dependencies = [
 name = "example-diesel-async-postgres"
 version = "0.1.0"
 dependencies = [
- "axum",
+ "axum 0.8.4",
  "bb8 0.8.6",
  "diesel",
  "diesel-async",
@@ -1440,7 +1521,7 @@ dependencies = [
 name = "example-diesel-postgres"
 version = "0.1.0"
 dependencies = [
- "axum",
+ "axum 0.8.4",
  "deadpool-diesel",
  "diesel",
  "diesel_migrations",
@@ -1454,7 +1535,7 @@ dependencies = [
 name = "example-error-handling"
 version = "0.1.0"
 dependencies = [
- "axum",
+ "axum 0.8.4",
  "serde",
  "tokio",
  "tower-http 0.6.2",
@@ -1466,7 +1547,7 @@ dependencies = [
 name = "example-form"
 version = "0.1.0"
 dependencies = [
- "axum",
+ "axum 0.8.4",
  "http-body-util",
  "mime",
  "serde",
@@ -1480,7 +1561,7 @@ dependencies = [
 name = "example-global-404-handler"
 version = "0.1.0"
 dependencies = [
- "axum",
+ "axum 0.8.4",
  "tokio",
  "tracing",
  "tracing-subscriber",
@@ -1490,7 +1571,7 @@ dependencies = [
 name = "example-graceful-shutdown"
 version = "0.1.0"
 dependencies = [
- "axum",
+ "axum 0.8.4",
  "tokio",
  "tower-http 0.6.2",
  "tracing-subscriber",
@@ -1500,7 +1581,7 @@ dependencies = [
 name = "example-handle-head-request"
 version = "0.1.0"
 dependencies = [
- "axum",
+ "axum 0.8.4",
  "http-body-util",
  "hyper 1.5.2",
  "tokio",
@@ -1511,7 +1592,7 @@ dependencies = [
 name = "example-hello-world"
 version = "0.1.0"
 dependencies = [
- "axum",
+ "axum 0.8.4",
  "tokio",
 ]
 
@@ -1519,7 +1600,7 @@ dependencies = [
 name = "example-http-proxy"
 version = "0.1.0"
 dependencies = [
- "axum",
+ "axum 0.8.4",
  "hyper 1.5.2",
  "hyper-util",
  "tokio",
@@ -1532,8 +1613,8 @@ dependencies = [
 name = "example-jwt"
 version = "0.1.0"
 dependencies = [
- "axum",
- "axum-extra",
+ "axum 0.8.4",
+ "axum-extra 0.10.1",
  "jsonwebtoken",
  "serde",
  "serde_json",
@@ -1546,7 +1627,7 @@ dependencies = [
 name = "example-key-value-store"
 version = "0.1.0"
 dependencies = [
- "axum",
+ "axum 0.8.4",
  "tokio",
  "tower 0.5.2",
  "tower-http 0.6.2",
@@ -1558,7 +1639,7 @@ dependencies = [
 name = "example-low-level-native-tls"
 version = "0.1.0"
 dependencies = [
- "axum",
+ "axum 0.8.4",
  "futures-util",
  "hyper 1.5.2",
  "hyper-util",
@@ -1573,7 +1654,7 @@ dependencies = [
 name = "example-low-level-openssl"
 version = "0.1.0"
 dependencies = [
- "axum",
+ "axum 0.8.4",
  "futures-util",
  "hyper 1.5.2",
  "hyper-util",
@@ -1589,7 +1670,7 @@ dependencies = [
 name = "example-low-level-rustls"
 version = "0.1.0"
 dependencies = [
- "axum",
+ "axum 0.8.4",
  "futures-util",
  "hyper 1.5.2",
  "hyper-util",
@@ -1604,7 +1685,7 @@ dependencies = [
 name = "example-mongodb"
 version = "0.1.0"
 dependencies = [
- "axum",
+ "axum 0.8.4",
  "mongodb",
  "serde",
  "tokio",
@@ -1617,7 +1698,7 @@ dependencies = [
 name = "example-multipart-form"
 version = "0.1.0"
 dependencies = [
- "axum",
+ "axum 0.8.4",
  "tokio",
  "tower-http 0.6.2",
  "tracing",
@@ -1630,8 +1711,8 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-session",
- "axum",
- "axum-extra",
+ "axum 0.8.4",
+ "axum-extra 0.10.1",
  "http 1.2.0",
  "oauth2",
  "reqwest 0.12.12",
@@ -1645,7 +1726,7 @@ dependencies = [
 name = "example-parse-body-based-on-content-type"
 version = "0.1.0"
 dependencies = [
- "axum",
+ "axum 0.8.4",
  "serde",
  "tokio",
  "tracing",
@@ -1656,7 +1737,7 @@ dependencies = [
 name = "example-print-request-response"
 version = "0.1.0"
 dependencies = [
- "axum",
+ "axum 0.8.4",
  "http-body-util",
  "tokio",
  "tracing",
@@ -1667,7 +1748,7 @@ dependencies = [
 name = "example-prometheus-metrics"
 version = "0.1.0"
 dependencies = [
- "axum",
+ "axum 0.8.4",
  "metrics",
  "metrics-exporter-prometheus",
  "tokio",
@@ -1679,7 +1760,7 @@ dependencies = [
 name = "example-query-params-with-empty-strings"
 version = "0.1.0"
 dependencies = [
- "axum",
+ "axum 0.8.4",
  "http-body-util",
  "serde",
  "tokio",
@@ -1690,7 +1771,7 @@ dependencies = [
 name = "example-readme"
 version = "0.1.0"
 dependencies = [
- "axum",
+ "axum 0.8.4",
  "serde",
  "tokio",
  "tracing",
@@ -1701,7 +1782,7 @@ dependencies = [
 name = "example-request-id"
 version = "0.1.0"
 dependencies = [
- "axum",
+ "axum 0.8.4",
  "tokio",
  "tower 0.5.2",
  "tower-http 0.5.2",
@@ -1713,7 +1794,7 @@ dependencies = [
 name = "example-reqwest-response"
 version = "0.1.0"
 dependencies = [
- "axum",
+ "axum 0.8.4",
  "reqwest 0.12.12",
  "tokio",
  "tokio-stream",
@@ -1726,7 +1807,7 @@ dependencies = [
 name = "example-reverse-proxy"
 version = "0.1.0"
 dependencies = [
- "axum",
+ "axum 0.8.4",
  "hyper 1.5.2",
  "hyper-util",
  "tokio",
@@ -1736,7 +1817,7 @@ dependencies = [
 name = "example-routes-and-handlers-close-together"
 version = "0.1.0"
 dependencies = [
- "axum",
+ "axum 0.8.4",
  "tokio",
 ]
 
@@ -1744,7 +1825,7 @@ dependencies = [
 name = "example-serve-with-hyper"
 version = "0.1.0"
 dependencies = [
- "axum",
+ "axum 0.8.4",
  "hyper 1.5.2",
  "hyper-util",
  "tokio",
@@ -1755,8 +1836,8 @@ dependencies = [
 name = "example-simple-router-wasm"
 version = "0.1.0"
 dependencies = [
- "axum",
- "axum-extra",
+ "axum 0.8.4",
+ "axum-extra 0.10.1",
  "futures-executor",
  "http 1.2.0",
  "tower-service",
@@ -1766,7 +1847,7 @@ dependencies = [
 name = "example-sqlx-postgres"
 version = "0.1.0"
 dependencies = [
- "axum",
+ "axum 0.8.4",
  "sqlx",
  "tokio",
  "tracing",
@@ -1777,8 +1858,8 @@ dependencies = [
 name = "example-sse"
 version = "0.1.0"
 dependencies = [
- "axum",
- "axum-extra",
+ "axum 0.8.4",
+ "axum-extra 0.10.1",
  "eventsource-stream",
  "futures",
  "headers",
@@ -1795,7 +1876,7 @@ dependencies = [
 name = "example-static-file-server"
 version = "0.1.0"
 dependencies = [
- "axum",
+ "axum 0.8.4",
  "tokio",
  "tower 0.5.2",
  "tower-http 0.6.2",
@@ -1807,7 +1888,7 @@ dependencies = [
 name = "example-stream-to-file"
 version = "0.1.0"
 dependencies = [
- "axum",
+ "axum 0.8.4",
  "futures",
  "tokio",
  "tokio-util",
@@ -1820,7 +1901,7 @@ name = "example-templates"
 version = "0.1.0"
 dependencies = [
  "askama",
- "axum",
+ "axum 0.8.4",
  "http-body-util",
  "tokio",
  "tower 0.5.2",
@@ -1832,7 +1913,7 @@ dependencies = [
 name = "example-templates-minijinja"
 version = "0.1.0"
 dependencies = [
- "axum",
+ "axum 0.8.4",
  "minijinja",
  "tokio",
 ]
@@ -1841,7 +1922,7 @@ dependencies = [
 name = "example-testing"
 version = "0.1.0"
 dependencies = [
- "axum",
+ "axum 0.8.4",
  "http-body-util",
  "hyper-util",
  "mime",
@@ -1857,7 +1938,7 @@ dependencies = [
 name = "example-testing-websockets"
 version = "0.1.0"
 dependencies = [
- "axum",
+ "axum 0.8.4",
  "futures",
  "tokio",
  "tokio-tungstenite",
@@ -1867,8 +1948,8 @@ dependencies = [
 name = "example-tls-graceful-shutdown"
 version = "0.1.0"
 dependencies = [
- "axum",
- "axum-extra",
+ "axum 0.8.4",
+ "axum-extra 0.10.1",
  "axum-server 0.7.1",
  "tokio",
  "tracing",
@@ -1879,8 +1960,8 @@ dependencies = [
 name = "example-tls-rustls"
 version = "0.1.0"
 dependencies = [
- "axum",
- "axum-extra",
+ "axum 0.8.4",
+ "axum-extra 0.10.1",
  "axum-server 0.7.1",
  "tokio",
  "tracing",
@@ -1891,7 +1972,7 @@ dependencies = [
 name = "example-todos"
 version = "0.1.0"
 dependencies = [
- "axum",
+ "axum 0.8.4",
  "serde",
  "tokio",
  "tower 0.5.2",
@@ -1905,7 +1986,7 @@ dependencies = [
 name = "example-tokio-postgres"
 version = "0.1.0"
 dependencies = [
- "axum",
+ "axum 0.8.4",
  "bb8 0.9.0",
  "bb8-postgres",
  "tokio",
@@ -1918,7 +1999,7 @@ dependencies = [
 name = "example-tokio-redis"
 version = "0.1.0"
 dependencies = [
- "axum",
+ "axum 0.8.4",
  "bb8 0.8.6",
  "bb8-redis",
  "redis",
@@ -1931,7 +2012,7 @@ dependencies = [
 name = "example-tracing-aka-logging"
 version = "0.1.0"
 dependencies = [
- "axum",
+ "axum 0.8.4",
  "tokio",
  "tower-http 0.6.2",
  "tracing",
@@ -1942,7 +2023,7 @@ dependencies = [
 name = "example-unix-domain-socket"
 version = "0.1.0"
 dependencies = [
- "axum",
+ "axum 0.8.4",
  "http-body-util",
  "hyper 1.5.2",
  "hyper-util",
@@ -1954,7 +2035,7 @@ dependencies = [
 name = "example-validator"
 version = "0.1.0"
 dependencies = [
- "axum",
+ "axum 0.8.4",
  "http-body-util",
  "serde",
  "thiserror 1.0.69",
@@ -1969,7 +2050,7 @@ dependencies = [
 name = "example-versioning"
 version = "0.1.0"
 dependencies = [
- "axum",
+ "axum 0.8.4",
  "http-body-util",
  "tokio",
  "tower 0.5.2",
@@ -1981,8 +2062,8 @@ dependencies = [
 name = "example-websockets"
 version = "0.1.0"
 dependencies = [
- "axum",
- "axum-extra",
+ "axum 0.8.4",
+ "axum-extra 0.10.1",
  "futures",
  "futures-util",
  "headers",
@@ -1997,7 +2078,7 @@ dependencies = [
 name = "example-websockets-http2"
 version = "0.1.0"
 dependencies = [
- "axum",
+ "axum 0.8.4",
  "axum-server 0.6.0",
  "tokio",
  "tower-http 0.5.2",
