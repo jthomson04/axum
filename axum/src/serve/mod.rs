@@ -8,7 +8,10 @@ use std::{
     io,
     marker::PhantomData,
     pin::pin,
-    sync::Arc,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
 };
 
 use axum_core::{body::Body, extract::Request, response::Response};
@@ -21,7 +24,10 @@ use hyper::body::Incoming;
 use hyper_util::rt::{TokioIo, TokioTimer};
 #[cfg(any(feature = "http1", feature = "http2"))]
 use hyper_util::{server::conn::auto::Builder, service::TowerToHyperService};
-use tokio::{sync::watch, task::JoinHandle};
+use tokio::{
+    sync::{watch, Notify},
+    task::JoinHandle,
+};
 use tower::ServiceExt as _;
 use tower_service::Service;
 
@@ -329,15 +335,15 @@ where
             _marker,
         } = self;
 
-        // Receiver-side waits avoid contention in `Sender::closed`'s shared notification state.
-        let (_signal_tx, signal_rx) = watch::channel(());
+        let shutdown = Arc::new(ShutdownSignal::new());
+        let _shutdown_on_drop = ShutdownOnDrop(shutdown.clone());
         let (_close_tx, close_rx) = watch::channel(());
 
         loop {
             let (io, remote_addr) = listener.accept().await;
             handle_connection(
                 &mut make_service,
-                &signal_rx,
+                &shutdown,
                 &close_rx,
                 io,
                 remote_addr,
@@ -457,32 +463,29 @@ where
             _marker,
         } = self;
 
-        // Receiver-side waits avoid contention in `Sender::closed`'s shared notification state.
-        let (signal_tx, mut signal_rx) = watch::channel(());
+        let shutdown = Arc::new(ShutdownSignal::new());
+        let task_shutdown = shutdown.clone();
         executor.execute(async move {
             signal.await;
             trace!("received graceful shutdown signal. Telling tasks to shutdown");
-            drop(signal_tx);
+            task_shutdown.shutdown();
         });
 
         let (close_tx, close_rx) = watch::channel(());
 
         loop {
             let (io, remote_addr) =
-                match select(pin!(listener.accept()), pin!(signal_rx.changed())).await {
+                match select(pin!(listener.accept()), pin!(shutdown.wait())).await {
                     Either::Left((conn, _)) => conn,
-                    Either::Right((Err(_), _)) => {
+                    Either::Right(_) => {
                         trace!("signal received, not accepting new connections");
                         break;
-                    }
-                    Either::Right((Ok(()), _)) => {
-                        unreachable!("shutdown channel never sends values")
                     }
                 };
 
             handle_connection(
                 &mut make_service,
-                &signal_rx,
+                &shutdown,
                 &close_rx,
                 io,
                 remote_addr,
@@ -565,9 +568,51 @@ where
     }
 }
 
+struct ShutdownSignal {
+    is_shutdown: AtomicBool,
+    notify: Notify,
+}
+
+impl ShutdownSignal {
+    fn new() -> Self {
+        Self {
+            is_shutdown: AtomicBool::new(false),
+            notify: Notify::new(),
+        }
+    }
+
+    fn shutdown(&self) {
+        if !self.is_shutdown.swap(true, Ordering::AcqRel) {
+            self.notify.notify_waiters();
+        }
+    }
+
+    async fn wait(&self) {
+        if self.is_shutdown.load(Ordering::Acquire) {
+            return;
+        }
+
+        let notified = self.notify.notified();
+
+        if self.is_shutdown.load(Ordering::Acquire) {
+            return;
+        }
+
+        notified.await;
+    }
+}
+
+struct ShutdownOnDrop(Arc<ShutdownSignal>);
+
+impl Drop for ShutdownOnDrop {
+    fn drop(&mut self) {
+        self.0.shutdown();
+    }
+}
+
 async fn handle_connection<L, M, S, B, E>(
     make_service: &mut M,
-    signal_rx: &watch::Receiver<()>,
+    shutdown: &Arc<ShutdownSignal>,
     close_rx: &watch::Receiver<()>,
     io: <L as Listener>::Io,
     remote_addr: <L as Listener>::Addr,
@@ -584,7 +629,7 @@ async fn handle_connection<L, M, S, B, E>(
     B::Error: Into<Box<dyn StdError + Send + Sync>>,
     E: Executor,
 {
-    let mut signal_rx = signal_rx.clone();
+    let shutdown = shutdown.clone();
     let io = TokioIo::new(io);
 
     trace!("connection {remote_addr:?} accepted");
@@ -620,7 +665,7 @@ async fn handle_connection<L, M, S, B, E>(
         builder.http2().enable_connect_protocol();
 
         let mut conn = pin!(builder.serve_connection_with_upgrades(io, hyper_service));
-        let mut signal_closed = pin!(signal_rx.changed().fuse());
+        let mut signal_closed = pin!(shutdown.wait().fuse());
 
         loop {
             match select(conn.as_mut(), &mut signal_closed).await {
@@ -630,12 +675,9 @@ async fn handle_connection<L, M, S, B, E>(
                     }
                     break;
                 }
-                Either::Right((Err(_), _)) => {
+                Either::Right(_) => {
                     trace!("signal received in task, starting graceful shutdown");
                     conn.as_mut().graceful_shutdown();
-                }
-                Either::Right((Ok(()), _)) => {
-                    unreachable!("shutdown channel never sends values")
                 }
             }
         }
@@ -723,7 +765,7 @@ mod tests {
 
     #[cfg(unix)]
     use super::IncomingStream;
-    use super::{serve, Listener};
+    use super::{serve, Listener, ShutdownSignal};
     #[cfg(unix)]
     use crate::extract::connect_info::Connected;
     use crate::{
@@ -1034,6 +1076,28 @@ mod tests {
     }
 
     #[crate::test]
+    async fn shutdown_signal_notifies_active_and_late_waiters() {
+        use std::sync::Arc;
+
+        let shutdown = Arc::new(ShutdownSignal::new());
+        let active_waiter = tokio::spawn({
+            let shutdown = shutdown.clone();
+            async move { shutdown.wait().await }
+        });
+
+        tokio::task::yield_now().await;
+        shutdown.shutdown();
+
+        tokio::time::timeout(Duration::from_secs(2), active_waiter)
+            .await
+            .expect("active waiter did not observe shutdown")
+            .unwrap();
+        tokio::time::timeout(Duration::from_secs(2), shutdown.wait())
+            .await
+            .expect("late waiter did not observe shutdown");
+    }
+
+    #[crate::test]
     async fn serving_on_custom_io_type() {
         let (client, server) = io::duplex(1024);
         let listener = ReadyListener(Some(server));
@@ -1131,6 +1195,28 @@ mod tests {
             .await
             .expect("serve future did not resolve after in-flight request finished")
             .unwrap();
+    }
+
+    #[crate::test]
+    async fn dropping_serve_closes_connections() {
+        let (client, server) = io::duplex(1024);
+        let listener = ReadyListener(Some(server));
+        let server_task = tokio::spawn(serve(listener, Router::new()).into_future());
+
+        let stream = TokioIo::new(client);
+        let (sender, conn) = hyper::client::conn::http1::handshake::<_, Body>(stream)
+            .await
+            .unwrap();
+        let connection_task = tokio::spawn(conn);
+
+        server_task.abort();
+        assert!(server_task.await.unwrap_err().is_cancelled());
+
+        let _ = tokio::time::timeout(Duration::from_secs(2), connection_task)
+            .await
+            .expect("connection did not close after Serve was dropped")
+            .unwrap();
+        assert!(sender.is_closed());
     }
 
     // Asserts that `ListenerExt::tap_io` invokes its closure on every accepted
